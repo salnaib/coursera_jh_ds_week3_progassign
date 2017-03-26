@@ -18,4 +18,8 @@ The reposity contains:
   This is the resulting html document from an r markdown that explains each step and the variables used in the analysis
   
 4. codebook.md
-  This codebook references the run_analysis.html document above.
+  This codebook explains the variables created and used to return a tidy dataset.
+  
+To run, type the following:
+source("run_analysis.R")
+run_analysis("UCI HAR Dataset")
