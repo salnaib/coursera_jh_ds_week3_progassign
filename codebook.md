@@ -42,7 +42,8 @@ test_and_train: The tidy dataset from doing the following steps:
 5. create featureid column from the feature column (remove the "V")
 6. merge with the mean_std.features to get filter for mean() and std() features and get the feature names
 6. merge the activity_labels to get the labels
-7. select and name the relevant columns: subject, activity, V2, result and set column name V2 to variable
+7. Separates the features by "-" into 3 columns: measurement, measurementType and axis
+8. select and name the relevant columns: subject, activity, measurement, measurementType and axis
 
 aggdata: Aggregate the test_and_train to get the mean of the results by grouping on subject, activity and variable
 

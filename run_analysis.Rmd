@@ -1,0 +1,201 @@
+---
+title: "run_analysis"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown for run_analysis
+
+This markdown explains the steps taken by the function run_analysis(dir) to create a tidy dataset from the "UCI HAR Dataset"
+
+The dir is of type character that can be passed into run_analysis to define where in the current working directory to find the txt files.
+
+```{r, echo=FALSE}
+
+library(dplyr)
+library(data.table)
+library(tidyr)
+
+```
+
+Set files directory "UCI HAR Dataset" into wd
+
+```{r}
+
+wd <- paste0(getwd(),"/","UCI HAR Dataset")
+
+```
+
+
+Put activity_labels.txt in activity_labels
+and set column names to be "activityid" and "activity"
+
+```{r}
+
+  # get activity labels and sets column names
+  activity_labels <- read.table(paste0(wd,"/activity_labels.txt")) %>%
+    setnames(c("activityId","activity"))
+  head(activity_labels)
+
+```
+
+set features.txt list into features
+
+```{r}
+
+  # get features
+  features <- read.table(paste0(wd,"/features.txt"))
+  head(features)
+
+```
+
+Filter features to only include mean() and std() into mean_std.features
+
+```{r}
+  # filter features for only mean() and std()
+  mean_std.features <- features %>%
+    filter(grepl("mean\\(\\)|std\\(\\)",V2))
+  head(mean_std.features)
+
+```
+
+Set subject_test.txt data to subject_test and set the column name as "subject"
+
+```{r}
+
+  # get subject_test and set column name
+  subject_test <- read.table(paste0(wd,"/test/subject_test.txt")) %>%
+    setnames("subject")
+  head(subject_test)
+
+```
+
+set y_test.txt data to y_test and set column name as "activityId"
+
+```{r}
+
+  # get y_test and set column name
+  y_test <- read.table(paste0(wd,"/test/y_test.txt")) %>%
+    setnames("activityId")
+  head(y_test)
+
+```
+
+set X_test.txt data to X_test
+
+```{r}
+
+  # get X_test
+  X_test <- read.table(paste0(wd,"/test/X_test.txt"))
+  head(X_test)
+
+```
+
+get subject_train.txt data into subject_train
+
+```{r}
+
+  # get subject_train and set column name
+  subject_train <- read.table(paste0(wd,"/train/subject_train.txt")) %>%
+    setnames("subject")
+  head(subject_train)
+
+```
+
+set y_train.txt data to y_train and set column name as "activityId"
+
+```{r}
+
+  # get y_train and set column name
+  y_train <- read.table(paste0(wd,"/train/y_train.txt")) %>%
+    setnames("activityId")
+  head(y_train)
+
+```
+
+set X_train.txt data to X_train
+
+```{r}
+
+  # get X_train
+  X_train <- read.table(paste0(wd,"/train/X_train.txt"))
+  head(X_train)
+
+```
+
+row bind activities of train and test (train first) and put in activity
+
+```{r}
+
+  # row bind activities of train and test (train first)
+  activity <- rbind(y_train,y_test)
+  head(activity)
+
+```
+
+row bind subjects of train and test (train first) and put in subject
+
+```{r}
+
+  # row bind subjects of train and test (train first)
+  subject <- rbind(subject_train,subject_test)
+  head(subject)
+
+```
+
+Create the tidy dataset test_and_train:
+1. row bind the X_train and X_test
+2. column bind the subject to the result of 1
+3. column bind the activity to the result of 2
+4. convert the columns of feature types to one column (gather on feature)
+5. create featureid column from the feature column (remove the "V")
+6. merge with the mean_std.features to get filter for mean() and std() features and get the feature names
+6. merge the activity_labels to get the labels
+7. select and name the relevant columns: subject, activity, V2, result and set column name V2 to variable
+
+```{r}
+
+  # Merges the training and the test sets to create one data set.
+  test_and_train <- rbind(X_train, X_test) %>%
+    # adds subject column to data set
+    cbind(subject) %>%
+    # adds activity column to data set
+    cbind(activity) %>%
+    # Convert columns of observations to one column
+    gather(feature, result, -c(subject, activityId)) %>%
+    # Get feature id
+    mutate(featureid = as.integer(gsub("[^0-9]","", feature))) %>%
+    # Get mean and std feature descriptions
+    merge(mean_std.features, by.x = "featureid", by.y = "V1") %>%
+    # Uses descriptive activity names to name the activities in the data set
+    merge(activity_labels) %>%
+    # separate the feature description into measurement, type and axis
+    separate('V2', c("measurement", "measurementType", "axis"), sep="-", extra="drop") %>%
+    # Extracts only the measurements on the mean and standard deviation for each measurement.
+    select(subject, activity, measurement, measurementType, axis, result) %>%
+    # Order
+    arrange(subject, activity, measurement, measurementType, axis)
+  head(test_and_train)
+
+```
+
+Aggregate the test_and_train to get the mean of the results by grouping on subject, activity and variable
+
+```{r}
+
+  # aggregate numeric columns by activity and subject, removing NA values
+  aggdata <-test_and_train %>%
+    # group by subject, activity measurement, measurementType and axis
+    group_by(subject, activity, measurement, measurementType, axis) %>%
+    # summarize by the mean of the result
+    summarize(mean = mean(result))
+  head(aggdata)
+
+
+```
+

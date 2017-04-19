@@ -53,16 +53,20 @@ run_analysis <- function(dir) {
     merge(mean_std.features, by.x = "featureid", by.y = "V1") %>%
     # Uses descriptive activity names to name the activities in the data set
     merge(activity_labels) %>%
+    # separate the feature description into measurement, type and axis
+    separate('V2', c("measurement", "measurementType", "axis"), sep="-", extra="drop") %>%
     # Extracts only the measurements on the mean and standard deviation for each measurement.
-    select(subject, activity, variable = V2, result)
-
+    select(subject, activity, measurement, measurementType, axis, result) %>%
+    # Order
+    arrange(subject, activity, measurement, measurementType, axis)
+  
   # aggregate numeric columns by activity and subject, removing NA values
   aggdata <-test_and_train %>%
-    # group by subject, activity and variable
-    group_by(subject, activity, variable) %>%
+    # group by subject, activity measurement, measurementType and axis
+    group_by(subject, activity, measurement, measurementType, axis) %>%
     # summarize by the mean of the result
     summarize(mean = mean(result))
-
+  
   # return a list of 2 elements: the tidy dataset and it's aggregate
   list(test_and_train, aggdata)
   
